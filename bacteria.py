@@ -37,6 +37,8 @@ class Bacteria(pygame.sprite.Sprite):
         self.prev_neighbour = [[WIDTH*WIDTH + HEIGHT*HEIGHT, WIDTH*WIDTH + HEIGHT*HEIGHT],
                           [-1, -1],
                           [-1, -1]] # структура - аналогично self.neighbour
+        self.neighbour_size = 0
+
 
         #неэволюционные параметры
         self.infection_status = False
@@ -48,16 +50,18 @@ class Bacteria(pygame.sprite.Sprite):
         # расход энергии
         self.speed_energy = self.speed * self.speed / 4
         self.sensitive_energy = self.sensitive
-        self.size_energy = self.size * self.size * self.size / 125
+        self.size_energy = self.size * self.size * self.size / 100
 
         # параметры вывода на экран
         self.screen = screen
         self.image = pygame.image.load('sprites/bac_1.png')
         self.image_orig = self.image  # оригинальное изображение. Нужно для поворотов
+        self.image_orig = pygame.transform.scale(self.image_orig, (self.size, self.size))
         self.rect = self.image.get_rect()
         self.screen_rect = screen.get_rect() # get_rect() оценивает изображение image и высчитывает прямоугольник, способный окружить его
         self.rect.centerx = x
         self.rect.centery = y
+
 
     def __del__(self): # деструктор
         print('Бактерия умерла')
@@ -85,9 +89,15 @@ class Bacteria(pygame.sprite.Sprite):
             self.sensitive_energy = self.sensitive
         if m == 3:
             self.size += self.size * const.mutation_value * random.uniform(-1, 1)
-            self.size_energy = self.size * self.size * self.size / 125
+            self.size_energy = self.size * self.size * self.size / 100
+            self.image = pygame.transform.scale(self.image_orig, (self.size, self.size))
+            # границы параметров
+            if (self.size <= 4):
+                self.size = 4
+            elif (self.size >= 90):
+                self.size = 90
 
-    def johan_pohan(self): # размножение
+    def duplicate(self): # размножение
         self.status_father = True
 
     def rotation(self, angle): #поворот, нужен для движения
@@ -161,13 +171,15 @@ class Bacteria(pygame.sprite.Sprite):
     def update(self):
 
         self.locator()
-        # if (self.neighbour[0][0] > 0):
-        #     move = self.move_from_target(self.neighbour[1][0], self.neighbour[2][0])
-        #     print("От врага")
-        if (self.neighbour[0][1] > 0):
+        if (self.neighbour[0][0] > 0) and (self.neighbour_size > (self.size*1.2)): #если бактерия больше на 20 процентов, её следует опасаться
+            move = self.move_from_target(self.neighbour[1][0], self.neighbour[2][0])
+        elif (self.neighbour[0][0] > 0) and (self.neighbour_size*1.2 <= self.size):
+            move = self.move_to_target(self.neighbour[1][0], self.neighbour[2][0])
+        elif (self.neighbour[0][1] > 0):
             move = self.move_to_target(self.neighbour[1][1], self.neighbour[2][1])
         else:
             move = random.randrange(1, 12) #случайное движение по 4 направлениям
+
 
         self.moving_rules(move) #движение бактерии
         self.last_move = move
@@ -195,7 +207,7 @@ class Bacteria(pygame.sprite.Sprite):
                     self.infection() #
 
         if self.energy >= 0.8 * const.max_energy:
-            self.johan_pohan() # размножение
+            self.duplicate() # размножение
 
         if self.lifetime % const.mutation_period == 1:
             self.mutation() # мутация

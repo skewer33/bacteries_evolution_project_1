@@ -9,6 +9,8 @@ import random
 import constants as const
 import food
 import information_panel as inform
+import statistics as stat
+import pandas as pd
 
 #constants, если хотите их изменить, меняйте в файле "constants"
 WIDTH = const.WIDTH  # ширина игрового окна
@@ -28,15 +30,24 @@ def run(N_bac):
     bacteries = pygame.sprite.Group() # группа объектов типа бактерия
     meals = pygame.sprite.Group() # группа объектов типа еда
     #infos = pygame.sprite.Group() # группа информационных уведомлений
-    for i in range(N_bac):
-        x = random.uniform(0, 1) * WIDTH
-        y = random.uniform(0, 1) * HEIGHT
-        bac = Bacteria(x, y)
-        all_sprites.add(bac)
-        bacteries.add(bac)
+    add_bac(bacteries, all_sprites)
     running = True
 
     time = 0  #счётчик шагов моделирования
+    era = 0 #счётчик эпох (моментов сбора статистики)
+    time_line = []
+
+    # speed_stats = [['time', const.parametrs[0]]]
+    # sence_stats = [['time', const.parametrs[1]]]
+    # size_stats = [['time', const.parametrs[2]]]
+    speed_stats = [[const.parametrs[0], 'era period = ', const.era_period]]
+    sence_stats = [[const.parametrs[0], 'era period = ', const.era_period]]
+    size_stats = [[const.parametrs[0], 'era period = ', const.era_period]]
+
+    #matrix_stat = pd.DataFrame('time, tick', 'N bacteries', 'mean speed', 'deviation speed', 'mean sens', 'deviation sens', 'mean size',
+              # 'deviation size')
+    df_stat = pd.DataFrame(columns=['time, tick', 'N bacteries', 'mean speed', 'deviation speed',
+                                    'mean sens', 'deviation sens', 'mean size', 'deviation size'])
 
     while running:
         clock.tick(FPS)
@@ -46,21 +57,27 @@ def run(N_bac):
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_p: pause(bacteries, all_sprites) # пауза
 
+        #if time % const.spawn_time == 0:
+        #    add_bac(bacteries, all_sprites)
+
+        nearest_neighbours(bacteries, meals)
+
+        # симуляционные события (размножение, питание, размножение)
+        food_spawn(all_sprites, meals, time) # спавним еду
+        eating(bacteries, meals)
+        bac_hunt(bacteries)
+        checking_for_duplicate(all_sprites, bacteries) # проверяем не пора ли размножаться
+
+        # сбор статистики
+        if (time % const.era_period == 0):
+            era += 1
+            time_line.append(era*const.era_period)
+            stat.collect_statistics(bacteries, speed_stats, sence_stats, size_stats, df_stat, era)
+
         time += 1
         time_render = const.font.render("Time: %d ticks" %(time), False, const.WHITE) # рендерим текст
 
-
-
-        nearest_neighbours(bacteries, meals)
         all_sprites.update() #
-
-        food_spawn(all_sprites, meals, time) # спавним еду
-        eating(bacteries, meals)
-
-        checking_for_johan_pohan(all_sprites, bacteries) # проверяем не пора ли размножаться
-
-
-
         screen.fill(bg_color) # прорисовка бэкграунда
         all_sprites.draw(screen) # прорисовка спрайтов
         screen.blit(time_render, (0, 0)) # прорисовка текста со временем симуляции
@@ -69,9 +86,31 @@ def run(N_bac):
                 pygame.draw.circle(const.screen, const.GRAY, bac.rect.center, bac.sensitive, 1)
 
         pygame.display.flip() #прорисовка последнего кадра
+        if len(bacteries) == 0:
+            running = False
+
+    # вывод графиков, сохранение статистики
+    stat.plot_line(1, df_stat['time, tick'], df_stat["N bacteries"]) # график числа бактерий
+    stat.hist_stat(2, speed_stats, const.parametrs[0], 1, era)
+    stat.hist_stat(3, sence_stats, const.parametrs[1], 1, era)
+    stat.hist_stat(4, size_stats, const.parametrs[2], 1, era)
+    stat.boxplot(5, speed_stats, time_line, const.parametrs[0])
+    stat.boxplot(6, sence_stats, time_line, const.parametrs[1])
+    stat.boxplot(7, size_stats, time_line, const.parametrs[2], interactive=False)
+
+    # собираем всю информацию об изменениях параметров в один файл
+    df_speed = pd.DataFrame(speed_stats)
+    df_sence = pd.DataFrame(sence_stats)
+    df_size = pd.DataFrame(size_stats)
+    df_parameters = pd.concat([df_speed, df_sence, df_size])
+
+    # выводим в эксель
+
+    df_parameters.to_excel("output_parameters.xlsx")
+    df_stat.to_excel("output_simulation_stat.xlsx")
+
 
     pygame.quit()
-
 
 def food_spawn(all_sprites, meals, time):
     if (time % (const.food_spawn_time) == 0):  # каждые 10 сек спавним новую еду
@@ -90,7 +129,28 @@ def eating(bacteries, meals):
                 if bac.energy >= const.max_energy:
                     bac.energy = const.max_energy
 
-def checking_for_johan_pohan(all_sprites, group): #смотрим кто готов размножаться и размножаем
+
+def add_bac(bacteries, all_sprites):
+    for i in range(const.N_bac):
+        x = random.uniform(0, 1) * WIDTH
+        y = random.uniform(0, 1) * HEIGHT
+        bac = Bacteria(x, y)
+        all_sprites.add(bac)
+        bacteries.add(bac)
+
+def bac_hunt(bacteries):
+    for bac1 in bacteries:  # съедение бактерий
+        hunt = pygame.sprite.spritecollide(bac1, bacteries, False)
+        for bac_hunt in hunt:
+            for bac in bacteries:
+                if ((bac_hunt == bac) and (bac.size > (bac1.size*1.2))):
+                    bac.energy += bac1.energy*0.4
+                    bac1.kill()
+                    print("Скушал малого")
+                elif ((bac_hunt == bac) and ((bac.size*1.2) < bac1.size)):
+                    bac1.energy += bac.energy*0.4
+                    bac.kill()
+def checking_for_duplicate(all_sprites, group): #смотрим кто готов размножаться и размножаем
     for bac in group:
         if bac.status_father == True:
             child = Bacteria(bac.rect.centerx, bac.rect.centery, energy = int(bac.energy/2), speed = bac.speed,
@@ -118,9 +178,11 @@ def nearest_neighbours(bacteries, meals):
                     min_distance1 = dist
                     coord_x_target = bac2.rect.centerx
                     coord_y_target = bac2.rect.centery
+                    neighbour_size = bac2.size
             bac1.neighbour[0][0] = min_distance1
             bac1.neighbour[1][0] = coord_x_target
             bac1.neighbour[2][0] = coord_y_target
+            bac1.neighbour_size = neighbour_size #запоминаем размер ближайшей бакерии
         else:
             bac1.neighbour[0][0] = WIDTH * WIDTH + HEIGHT * HEIGHT
 

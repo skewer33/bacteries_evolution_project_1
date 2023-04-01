@@ -27,9 +27,9 @@ class Info_panel(pygame.sprite.Sprite): #выводит табличку с ха
             else:
                 self.rect.centerx = obj.rect.centerx + const.table_size_x/2
                 self.rect.centery = obj.rect.centery + const.table_size_y/2
-        self.text = "Energy = % d\nLife time = %d\nSpeed = %d\nSensitive = %d\nSize = %d\nCoordinates =\n(%d, %d)" \
+        self.text = "Energy = % d\nLife time = %d\nSpeed = %d\nSensitive = %d\nSize = %d\nCoordinates =\n(%d, %d)\nNeighbour = %s" \
                     %(int(obj.energy), int(obj.lifetime), int(obj.speed), int(obj.sensitive), int(obj.size),
-                      int(obj.rect.centerx), int(obj.rect.centery))
+                      int(obj.rect.centerx), int(obj.rect.centery), str(obj.neighbour_size))
 
     def vizualize_text(self, screen):
         blit_text(screen, self.text, (self.rect.centerx - const.table_size_x/2+5, self.rect.centery - const.table_size_y/2 + 2))

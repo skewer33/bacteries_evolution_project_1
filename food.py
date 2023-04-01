@@ -14,9 +14,12 @@ class Glucose(pygame.sprite.Sprite):
         pygame.sprite.Sprite.__init__(self)  # инициализатор встроенных классов Sprite
         #self.image = pygame.Surface((20, 20))
         #self.image.fill(const.YELLOW)
+        self.size = 10
         self.image = pygame.image.load('sprites/eat.png')
+        self.image = pygame.transform.scale(self.image, (self.size/2, self.size/2))
         self.rect = self.image.get_rect()
         self.rect.center = (random.uniform(0, 1) * WIDTH, random.uniform(0, 1) * HEIGHT)
+
 
     def __del__(self):  # деструктор
         #print('Кто-то подкрепился')

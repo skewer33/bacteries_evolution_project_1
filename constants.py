@@ -30,17 +30,22 @@ font = pygame.font.SysFont('Calibri', 16)
 
 #parameters of modelling
 #food
-N_food = 30
+N_food = 100
 food_spawn_time = 50
-food_value = 15000
+food_value = 10000
+
+#statistics
+
+era_period = 2000
+parametrs = ["speed", "sensitive", "size"]
 
 #bacteria
-N_bac = 30
-default_energy = 150000
+N_bac = 6
+default_energy = 120000
 max_energy = default_energy * 2
 spawn_time = 300
 mutation_period = 50
-mutation_value = 0.4
+mutation_value = 0.05
 
 default_sensitive = 50
 default_speed = 10
