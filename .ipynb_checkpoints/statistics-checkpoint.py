@@ -26,6 +26,15 @@ def collect_statistics(bacteries, matrix1, matrix2, matrix3, matrix_stat, era):
     row = {'time, tick': era * const.era_period, 'N bacteries': num_bac, 'mean speed': mean_speed, 'deviation speed': deviation_speed,
            'mean sens': mean_sens, 'deviation sens': deviation_sens, 'mean size': mean_size, 'deviation size': deviation_size}
     matrix_stat.loc[era] = row
+    # matrix_stat.append([])
+    # matrix_stat[:][era].append((era-1) * const.era_period)
+    # matrix_stat[:][era].append(num_bac)
+    # matrix_stat[:][era].append(mean_speed)
+    # matrix_stat[:][era].append(deviation_speed)
+    # matrix_stat[:][era].append(mean_sens)
+    # matrix_stat[:][era].append(deviation_sens)
+    # matrix_stat[:][era].append(mean_size)
+    # matrix_stat[:][era].append(deviation_size)
 
 
 def hist_stat(N_figure, matrix, parametr, era1, era2, interactive = True): # для отображения сравнительной гистограммы
@@ -52,7 +61,7 @@ def plot_line(N_figure, x, y, interactive = True):
     plt.interactive(interactive)
     plt.show()
 
-def boxplot(N_figure, matrix, parametr, interactive = True):
+def boxplot(N_figure, matrix, time_line, parametr, interactive = True):
     plt.figure(N_figure)
     # df2 = pd.DataFrame(matrix[1:])
     # df2 = pd.DataFrame.transpose(df2)

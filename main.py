@@ -4,6 +4,8 @@
 #Libraries
 import pygame
 import sys
+
+import information_panel
 from bacteria import Bacteria
 import random
 import constants as const
@@ -19,6 +21,7 @@ FPS = const.FPS  # частота кадров в секунду
 screen = const.screen
 pygame.display.set_caption("Evolution Modeling")
 clock = pygame.time.Clock()
+
 
 # основная функция игры
 def run(N_bac):
@@ -37,15 +40,10 @@ def run(N_bac):
     era = 0 #счётчик эпох (моментов сбора статистики)
     time_line = []
 
-    # speed_stats = [['time', const.parametrs[0]]]
-    # sence_stats = [['time', const.parametrs[1]]]
-    # size_stats = [['time', const.parametrs[2]]]
     speed_stats = [[const.parametrs[0], 'era period = ', const.era_period]]
-    sence_stats = [[const.parametrs[0], 'era period = ', const.era_period]]
+    sense_stats = [[const.parametrs[0], 'era period = ', const.era_period]]
     size_stats = [[const.parametrs[0], 'era period = ', const.era_period]]
 
-    #matrix_stat = pd.DataFrame('time, tick', 'N bacteries', 'mean speed', 'deviation speed', 'mean sens', 'deviation sens', 'mean size',
-              # 'deviation size')
     df_stat = pd.DataFrame(columns=['time, tick', 'N bacteries', 'mean speed', 'deviation speed',
                                     'mean sens', 'deviation sens', 'mean size', 'deviation size'])
 
@@ -55,7 +53,10 @@ def run(N_bac):
             if event.type == pygame.QUIT:
                 running = False
             if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_p: pause(bacteries, all_sprites) # пауза
+                if event.key == pygame.K_SPACE:
+                    running = pause(bacteries, all_sprites, speed_stats, sense_stats, size_stats, era, df_stat) # пауза
+                    print("RUNNING = ", running)
+
 
         #if time % const.spawn_time == 0:
         #    add_bac(bacteries, all_sprites)
@@ -65,14 +66,14 @@ def run(N_bac):
         # симуляционные события (размножение, питание, размножение)
         food_spawn(all_sprites, meals, time) # спавним еду
         eating(bacteries, meals)
-        bac_hunt(bacteries)
+        #bac_hunt(bacteries)
         checking_for_duplicate(all_sprites, bacteries) # проверяем не пора ли размножаться
 
         # сбор статистики
         if (time % const.era_period == 0):
             era += 1
             time_line.append(era*const.era_period)
-            stat.collect_statistics(bacteries, speed_stats, sence_stats, size_stats, df_stat, era)
+            stat.collect_statistics(bacteries, speed_stats, sense_stats, size_stats, df_stat, era)
 
         time += 1
         time_render = const.font.render("Time: %d ticks" %(time), False, const.WHITE) # рендерим текст
@@ -90,19 +91,15 @@ def run(N_bac):
             running = False
 
     # вывод графиков, сохранение статистики
-    stat.plot_line(1, df_stat['time, tick'], df_stat["N bacteries"]) # график числа бактерий
-    stat.hist_stat(2, speed_stats, const.parametrs[0], 1, era)
-    stat.hist_stat(3, sence_stats, const.parametrs[1], 1, era)
-    stat.hist_stat(4, size_stats, const.parametrs[2], 1, era)
-    stat.boxplot(5, speed_stats, time_line, const.parametrs[0])
-    stat.boxplot(6, sence_stats, time_line, const.parametrs[1])
-    stat.boxplot(7, size_stats, time_line, const.parametrs[2], interactive=False)
+    stat.plot_line(1, df_stat['time, tick'], df_stat["N bacteries"], interactive= True) # график числа бактерий
+    plot_histograms(speed_stats, sense_stats, size_stats, era, True)
+    plot_boxplot(speed_stats, sense_stats, size_stats, False)
 
     # собираем всю информацию об изменениях параметров в один файл
     df_speed = pd.DataFrame(speed_stats)
-    df_sence = pd.DataFrame(sence_stats)
+    df_sense = pd.DataFrame(sense_stats)
     df_size = pd.DataFrame(size_stats)
-    df_parameters = pd.concat([df_speed, df_sence, df_size])
+    df_parameters = pd.concat([df_speed, df_sense, df_size])
 
     # выводим в эксель
 
@@ -205,17 +202,46 @@ def nearest_neighbours(bacteries, meals):
 
 
 
-def pause(bacteries, all_sprites): #пауза. Пробел - снять с паузы, p - поставить на паузу
+def pause(bacteries, all_sprites, speed_stats, sense_stats, size_stats, era, df_stat): #пауза. Пробел - снять с паузы, p - поставить на паузу
     paused = True
+    global running
     infos = pygame.sprite.Group()
+    input_boxes = pygame.sprite.Group()
 
     while paused:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                pygame.quit()
+                running = False
+                paused = False
+
+                return running
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_SPACE:
                     paused = False
+                if event.key == pygame.K_h:
+                    plot_histograms(speed_stats, sense_stats, size_stats, era, False)
+                if event.key == pygame.K_b:
+                    plot_boxplot(speed_stats, sense_stats, size_stats, False)
+                if event.key == pygame.K_l:
+                    stat.plot_line(1, df_stat['time, tick'], df_stat["N bacteries"], interactive=False)
+
+                if event.key == pygame.K_s:
+                    input_box_N_food = information_panel.InputBox(WIDTH/2-100, HEIGHT/2 - 50, 40, 20, 'N food: %d' %(const.N_food))
+                    input_box_Food_spawn_time = information_panel.InputBox(WIDTH/2-100, HEIGHT/2 - 80, 40, 20, 'Food spawn time: %d' %(const.food_spawn_time))
+                    input_box_mut_period = information_panel.InputBox(WIDTH/2-100, HEIGHT/2 - 120, 40, 20, 'Mutation period: %d' %(const.mutation_period))
+                    input_box_Era = information_panel.InputBox(WIDTH/2-100, HEIGHT/2 - 160, 40, 20, 'Period of era: %d' %(const.era_period))
+                    input_boxes.add(input_box_N_food, input_box_Food_spawn_time, input_box_mut_period, input_box_Era)
+
+            if len(input_boxes) != 0:
+                const.N_food = input_box_N_food.handle_event(event, const.N_food)
+                input_box_N_food.text = 'N food: %d' %(const.N_food)
+                const.food_spawn_time = input_box_Food_spawn_time.handle_event(event, const.food_spawn_time)
+                input_box_Food_spawn_time.text = 'Food spawn time: %d' %(const.food_spawn_time)
+                const.mutation_value = input_box_mut_period.handle_event(event, const.mutation_value)
+                input_box_mut_period.text = 'Mutation period: %d' %(const.mutation_period)
+                const.era_period = input_box_Era.handle_event(event, const.era_period)
+                input_box_Era.text = 'Period of era: %d' %(const.era_period)
+
             if event.type == pygame.MOUSEBUTTONDOWN:
                 pos = pygame.mouse.get_pos() # отслеживаем клик
                 clicked_bacs = 0
@@ -239,20 +265,42 @@ def pause(bacteries, all_sprites): #пауза. Пробел - снять с п�
                     all_sprites.draw(screen)
                     infos.add(info)
 
-        if infos != 0: # визуализируем текст
+
+        if len(infos) != 0: # визуализируем текст
             for info in infos:
                 info.vizualize_text(screen)
 
-        pygame.display.update()
+        if len(input_boxes) != 0:
+            screen.fill(const.BLACK)
+            all_sprites.draw(screen)
+            for box in input_boxes:
+                box.update()
+                box.draw(screen)
+
+        #pygame.display.update()
+        pygame.display.flip()
         clock.tick(15)
 
     for info in infos: # удаляем плашки
         info.kill()
+    for box in input_boxes:
+        box.kill()
+    return running
 
+def plot_histograms(speed_stats, sense_stats, size_stats, era, interactive_status):
+    stat.hist_stat(2, speed_stats, const.parametrs[0], 1, era)
+    stat.hist_stat(3, sense_stats, const.parametrs[1], 1, era)
+    stat.hist_stat(4, size_stats, const.parametrs[2], 1, era, interactive=interactive_status)
+
+def plot_boxplot(speed_stats, sense_stats, size_stats, interactive_status):
+    stat.boxplot(5, speed_stats, const.parametrs[0])
+    stat.boxplot(6, sense_stats, const.parametrs[1])
+    stat.boxplot(7, size_stats, const.parametrs[2], interactive=interactive_status)
 
 def main():
     print('Hello! GAYS')
     run(const.N_bac)
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
+    running = True
     main()

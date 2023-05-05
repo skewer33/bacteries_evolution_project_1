@@ -171,11 +171,11 @@ class Bacteria(pygame.sprite.Sprite):
     def update(self):
 
         self.locator()
-        if (self.neighbour[0][0] > 0) and (self.neighbour_size > (self.size*1.2)): #если бактерия больше на 20 процентов, её следует опасаться
-            move = self.move_from_target(self.neighbour[1][0], self.neighbour[2][0])
-        elif (self.neighbour[0][0] > 0) and (self.neighbour_size*1.2 <= self.size):
-            move = self.move_to_target(self.neighbour[1][0], self.neighbour[2][0])
-        elif (self.neighbour[0][1] > 0):
+        #if (self.neighbour[0][0] > 0) and (self.neighbour_size > (self.size*1.2)): #если бактерия больше на 20 процентов, её следует опасаться
+            #move = self.move_from_target(self.neighbour[1][0], self.neighbour[2][0])
+        #elif (self.neighbour[0][0] > 0) and (self.neighbour_size*1.2 <= self.size):
+            #move = self.move_to_target(self.neighbour[1][0], self.neighbour[2][0])
+        if (self.neighbour[0][1] > 0):
             move = self.move_to_target(self.neighbour[1][1], self.neighbour[2][1])
         else:
             move = random.randrange(1, 12) #случайное движение по 4 направлениям

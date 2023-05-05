@@ -3,8 +3,8 @@ pygame.init()
 pygame.font.init()
 
 #global constants
-WIDTH = 1200  # ширина игрового окна
-HEIGHT = 800  # высота игрового окна
+WIDTH = 1600  # ширина игрового окна
+HEIGHT = 900  # высота игрового окна
 FPS = 20  # частота кадров в секунду
 
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
@@ -16,6 +16,7 @@ GREEN = (0, 255, 0)
 BLUE = (0, 0, 255)
 YELLOW = (255, 255, 0)
 GRAY = (75, 75, 75)
+LIGHT_GRAY = (150, 150, 150)
 
 #info window
 alpha = 0.5 # коэф сдвига информационного окна относительно бактерий
@@ -27,6 +28,11 @@ text = "This is a really long sentence with a couple of breaks.\nSometimes it wi
        "This function doesn't check if the text is too high to fit on the height of the surface though, so sometimes " \
        "text will disappear underneath the surface"
 font = pygame.font.SysFont('Calibri', 16)
+
+#settings panel
+set_table_size_x = 900
+set_table_size_y = 600
+
 
 #parameters of modelling
 #food
